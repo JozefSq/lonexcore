@@ -4,6 +4,7 @@ const { getDriveFiles, findFileByName, getDownloadLink, listFolder, searchFiles,
 const { sendMail } = require('./email/smtp');
 const { startDailyChecklist } = require('./dailyChecklist');
 const { startWeeklyReports } = require('./weeklyReports');
+const { ProjectManager } = require('./projectManager');
 
 const client = new Client({
   intents: [
@@ -20,6 +21,10 @@ client.once(Events.ClientReady, (c) => {
   // Spusti denný checklist scheduler
   startDailyChecklist(client);
     startWeeklyReports(client);
+
+  // Initialize ProjectManager
+const projectManager = new ProjectManager();
+projectManager.init();
 });
 
 // Upload cez message attachment
