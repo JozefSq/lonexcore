@@ -226,4 +226,55 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
+
+// Handle checklist button interactions
+client.on(Events.InteractionCreate, async (interaction) => {
+  if (!interaction.isButton()) return;
+
+  if (interaction.customId.startsWith('checklist_')) {
+    const section = interaction.customId.split('_')[1];
+    const userId = interaction.user.id;
+    const timestamp = new Date().toISOString();
+
+    // Uložiť odpoveď
+    const dataDir = path.join(__dirname, '../data');
+    const responsesFile = path.join(dataDir, 'checklistResponses.json');
+
+    try {
+      await fs.mkdir(dataDir, { recursive: true });
+      let responses = [];
+      
+      try {
+        const fileContent = await fs.readFile(responsesFile, 'utf8');
+        responses = JSON.parse(fileContent);
+      } catch {
+        // Súbor ešte neexistuje
+      }
+
+      responses.push({
+        userId,
+        username: interaction.user.tag,
+        section,
+        timestamp,
+        messageId: interaction.message.id
+      });
+
+      await fs.writeFile(responsesFile, JSON.stringify(responses, null, 2));
+
+      await interaction.reply({ 
+        content: `✅ Sekcia **${section}** označená ako dokončená!`, 
+        ephemeral: true 
+      });
+
+      console.log(`✅ ${interaction.user.tag} dokončil sekciu: ${section}`);
+    } catch (err) {
+      console.error('❌ Chyba pri ukladaní odpovede:', err);
+      await interaction.reply({ 
+        content: '❌ Chyba pri ukladaní odpovede', 
+        ephemeral: true 
+      });
+    }
+  }
+});
+
 client.login(process.env.LONEXCORE_TOKEN);
