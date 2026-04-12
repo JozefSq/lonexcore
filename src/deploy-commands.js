@@ -36,6 +36,35 @@ const lonexcoreCommands = [
       { name: 'owner', description: 'Poslať z owner emailu?', type: 5, required: false }
     ]
   },
+    {
+    name: 'project',
+    description: '📅 Správa projektov s AI research a deadline tracking',
+    options: [
+      {
+        type: 1, // SUB_COMMAND
+        name: 'create',
+        description: 'Vytvor nový projekt s deadline',
+        options: [
+          { name: 'nazov', description: 'Názov projektu', type: 3, required: true },
+          { name: 'deadline', description: 'Deadline (YYYY-MM-DD)', type: 3, required: true },
+          { name: 'popis', description: 'Popis projektu', type: 3, required: false }
+        ]
+      },
+      {
+        type: 1, // SUB_COMMAND  
+        name: 'list',
+        description: 'Zoznam všetkých projektov'
+      },
+      {
+        type: 1, // SUB_COMMAND
+        name: 'status',
+        description: 'Status projektu a AI research',
+        options: [
+          { name: 'nazov', description: 'Názov projektu', type: 3, required: true }
+        ]
+      }
+    ]
+  },
   { name: 'setup', description: '🔧 Vytvor celú štruktúru servera (kategórie, kanály, role)' }
 ];
 
