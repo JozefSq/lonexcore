@@ -8,10 +8,6 @@ const lonexcoreCommands = [
     name: 'gdrive',
     description: '📁 Google Drive operácie',
     options: [
-    {
-    name: 'gdrive',
-    description: 'Google Drive prehliadač',
-    options: [
       {
         type: 1, // SUB_COMMAND
         name: 'browse',
@@ -30,7 +26,7 @@ const lonexcoreCommands = [
       }
     ]
   },
-      {
+  {
     name: 'mail',
     description: 'Odošli email cez SMTP',
     options: [
@@ -40,7 +36,6 @@ const lonexcoreCommands = [
       { name: 'owner', description: 'Poslať z owner emailu?', type: 5, required: false }
     ]
   },
-
   { name: 'setup', description: '🔧 Vytvor celú štruktúru servera (kategórie, kanály, role)' }
 ];
 
