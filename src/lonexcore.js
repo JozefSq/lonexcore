@@ -2,6 +2,7 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, Events, ChannelType, PermissionFlagsBits } = require('discord.js');
 const { getDriveFiles, findFileByName, getDownloadLink, listFolder, searchFiles, uploadFileFromUrl } = require('./google/client');
 const { sendMail } = require('./email/smtp');
+const { startDailyChecklist } = require('./dailyChecklist');
 
 const client = new Client({
   intents: [
@@ -14,6 +15,9 @@ const client = new Client({
 
 client.once(Events.ClientReady, (c) => {
   console.log(`✅ LonexCore prihlasený ako: ${c.user.tag}`);
+    
+  // Spusti denný checklist scheduler
+  startDailyChecklist(client);
 });
 
 // Upload cez message attachment
