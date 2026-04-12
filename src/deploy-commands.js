@@ -8,45 +8,39 @@ const lonexcoreCommands = [
     name: 'gdrive',
     description: '📁 Google Drive operácie',
     options: [
+    {
+    name: 'gdrive',
+    description: 'Google Drive prehliadač',
+    options: [
       {
-        name: 'akcia',
-        description: 'list / upload / download',
-        type: 3,
-        required: true,
-        choices: [
-          { name: 'Zoznam súborov', value: 'list' },
-          { name: 'Upload súboru', value: 'upload' },
-          { name: 'Download súboru', value: 'download' }
+        type: 1, // SUB_COMMAND
+        name: 'browse',
+        description: 'Prehliadaj priečinky',
+        options: [
+          { name: 'folder_id', description: 'ID priečinka (voliteľné)', type: 3, required: false }
         ]
       },
       {
-        name: 'nazov',
-        description: 'Názov súboru (pre download)',
-        type: 3,
-        required: false
-      }
-    ]
-  },
-  {
-    name: 'mail',
-    description: '📧 Pošli email',
-    options: [
-      { name: 'komu', description: 'Email adresa príjemcu', type: 3, required: true },
-      { name: 'predmet', description: 'Predmet emailu', type: 3, required: true },
-      { name: 'sprava', description: 'Text správy', type: 3, required: true },
-      {
-        name: 'od',
-        description: 'Odosielateľ',
-        type: 3,
-        required: false,
-        choices: [
-          { name: 'info@lonexdigital.com', value: 'info@lonexdigital.com' },
-          { name: 'support@lonexdigital.com', value: 'support@lonexdigital.com' },
-          { name: 'jozef@lonexdigital.com', value: 'jozef@lonexdigital.com' }
+        type: 1, // SUB_COMMAND
+        name: 'search',
+        description: 'Hľadaj súbory',
+        options: [
+          { name: 'nazov', description: 'Časť názvu súboru', type: 3, required: true }
         ]
       }
     ]
   },
+      {
+    name: 'mail',
+    description: 'Odošli email cez SMTP',
+    options: [
+      { name: 'komu', description: 'Email príjemcu', type: 3, required: true },
+      { name: 'predmet', description: 'Predmet emailu', type: 3, required: true },
+      { name: 'sprava', description: 'Text správy', type: 3, required: true },
+      { name: 'owner', description: 'Poslať z owner emailu?', type: 5, required: false }
+    ]
+  },
+
   { name: 'setup', description: '🔧 Vytvor celú štruktúru servera (kategórie, kanály, role)' }
 ];
 
