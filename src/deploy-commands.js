@@ -46,7 +46,8 @@ const lonexcoreCommands = [
         ]
       }
     ]
-  }
+  },
+  { name: 'setup', description: '🔧 Vytvor celú štruktúru servera (kategórie, kanály, role)' }
 ];
 
 const lonexaiCommands = [
