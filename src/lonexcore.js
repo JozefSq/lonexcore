@@ -3,6 +3,7 @@ const { Client, GatewayIntentBits, Events, ChannelType, PermissionFlagsBits } = 
 const { getDriveFiles, findFileByName, getDownloadLink, listFolder, searchFiles, uploadFileFromUrl } = require('./google/client');
 const { sendMail } = require('./email/smtp');
 const { startDailyChecklist } = require('./dailyChecklist');
+const { startWeeklyReports } = require('./weeklyReports');
 
 const client = new Client({
   intents: [
@@ -18,6 +19,7 @@ client.once(Events.ClientReady, (c) => {
     
   // Spusti denný checklist scheduler
   startDailyChecklist(client);
+    startWeeklyReports(client);
 });
 
 // Upload cez message attachment
