@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Events, ChannelType, PermissionFlagsBits } = require('discord.js');
-const { getDriveFiles, sendEmail, findFileByName, getDownloadLink } = require('./google/client');
+const { getDriveFiles, findFileByName, getDownloadLink, listFolder, searchFiles, uploadFileFromUrl } = require('./google/client');
+const { sendMail } = require('./email/smtp');
 
 const client = new Client({
   intents: [
@@ -21,7 +22,6 @@ client.on(Events.MessageCreate, async (message) => {
   
   if (message.content === '!upload' && message.attachments.size > 0) {
     const attachment = message.attachments.first();
-    const { uploadFileFromUrl } = require('./google/client');
     await message.reply('⏳ Nahrávam na Google Drive...');
     try {
       const file = await uploadFileFromUrl(attachment.url, attachment.name);
@@ -34,7 +34,7 @@ client.on(Events.MessageCreate, async (message) => {
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
-  
+
   if (interaction.commandName === 'ping') {
     await interaction.reply('🏓 Pong! LonexCore beží.');
   }
@@ -44,24 +44,22 @@ client.on(Events.InteractionCreate, async (interaction) => {
       '📋 **LonexCore príkazy:**\n' +
       '`/ping` — test bota\n' +
       '`/setup` — vytvor celú štruktúru servera (kategórie, kanály, role)\n' +
-      '`/gdrive akcia:list` — zoznam súborov\n' +
-      '`/gdrive akcia:upload` — pošli súbor ako `!upload`\n' +
-      '`/gdrive akcia:download nazov:xxx` — stiahni súbor\n' +
-      '`/mail komu: predmet: sprava:` — pošli email\n\n' +
+      '`/gdrive browse [folder_id]` — prehliadaj priečinky\n' +
+      '`/gdrive search nazov:xxx` — hľadaj súbory\n' +
+      '`/mail komu: predmet: sprava: [owner:true/false]` — pošli email\n\n' +
       '📋 **LonexAI príkazy:**\n' +
       '`/ai prompt:xxx` — opýtaj sa (Gemini)\n' +
       '`/ai prompt:xxx model:openai` — použij GPT-4o'
     );
   }
 
+
   // /SETUP príkaz - vytvorí celú štruktúru servera
   if (interaction.commandName === 'setup') {
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
       return interaction.reply({ content: '❌ Musíš byť admin na použitie /setup!', ephemeral: true });
     }
-
     await interaction.deferReply();
-
     const guild = interaction.guild;
     const setupLog = [];
 
@@ -169,52 +167,57 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 
-  // Pôvodné príkazy /gdrive a /mail
+
+  // /GDRIVE príkaz s subcommandmi: browse a search
   if (interaction.commandName === 'gdrive') {
-    const akcia = interaction.options.getString('akcia');
-    await interaction.deferReply();
-    
-    if (akcia === 'list') {
+    const sub = interaction.options.getSubcommand();
+    await interaction.deferReply({ ephemeral: true });
+
+    if (sub === 'browse') {
+      const folderId = interaction.options.getString('folder_id') || 'root';
       try {
-        const files = await getDriveFiles();
-        if (!files || files.length === 0) return interaction.editReply('📁 Drive je prázdny.');
-        const list = files.map(f => `• **${f.name}**`).join('\n');
-        await interaction.editReply(`📁 **Súbory na Google Drive:**\n${list}`);
+        const items = await listFolder(folderId);
+        const folders = items.filter(f => f.mimeType === 'application/vnd.google-apps.folder');
+        const files = items.filter(f => f.mimeType !== 'application/vnd.google-apps.folder');
+        
+        let msg = `📁 **Priečinky:**\n${folders.map(f => `\`${f.id}\` — ${f.name}`).join('\n') || 'Žiadne'}\n\n`;
+        msg += `📄 **Súbory:**\n${files.map(f => f.name).join('\n') || 'Žiadne'}`;
+        
+        await interaction.editReply(msg);
       } catch (err) {
         await interaction.editReply('❌ Chyba: ' + err.message);
       }
     }
-    
-    if (akcia === 'upload') {
-      await interaction.editReply('📎 Pošli súbor ako správu s textom `!upload` — bot ho automaticky nahrá na Drive.');
-    }
-    
-    if (akcia === 'download') {
-      const nazov = interaction.options.getString('nazov');
-      if (!nazov) return interaction.editReply('❌ Zadaj parameter `nazov`.');
+
+    if (sub === 'search') {
+      const query = interaction.options.getString('nazov');
       try {
-        const fileId = await findFileByName(nazov);
-        if (!fileId) return interaction.editReply(`❌ Súbor \"${nazov}\" nebol nájdený.`);
-        const link = await getDownloadLink(fileId);
-        await interaction.editReply(`⬇️ **${nazov}**\n🔗 ${link}`);
+        const results = await searchFiles(query);
+        if (results.length === 0) {
+          return interaction.editReply(`🔍 Žiadne výsledky pre "${query}".`);
+        }
+        const list = results.map(f => `[${f.name}](${f.webViewLink})`).join('\n');
+        await interaction.editReply(`🔍 **Výsledky pre "${query}":**\n${list}`);
       } catch (err) {
         await interaction.editReply('❌ Chyba: ' + err.message);
       }
     }
   }
 
+  // /MAIL príkaz cez SMTP
   if (interaction.commandName === 'mail') {
     const komu = interaction.options.getString('komu');
     const predmet = interaction.options.getString('predmet');
     const sprava = interaction.options.getString('sprava');
-    const od = interaction.options.getString('od') || process.env.MAIL_FROM;
+    const useOwner = interaction.options.getBoolean('owner') || false;
     
-    await interaction.deferReply();
+    await interaction.deferReply({ ephemeral: true });
     try {
-      await sendEmail(od, komu, predmet, sprava);
-      await interaction.editReply(`✅ Email odoslaný!\n**Od:** ${od}\n**Komu:** ${komu}\n**Predmet:** ${predmet}`);
+      await sendMail({ to: komu, subject: predmet, text: sprava, useOwner });
+      const from = useOwner ? process.env.SMTP_USER_OWNER : process.env.SMTP_USER_INFO;
+      await interaction.editReply(`✅ Email odoslaný!\n**Od:** ${from}\n**Komu:** ${komu}\n**Predmet:** ${predmet}`);
     } catch (err) {
-      await interaction.editReply('❌ Chyba odosielania: ' + err.message);
+      await interaction.editReply('❌ Chyba: ' + err.message);
     }
   }
 });
