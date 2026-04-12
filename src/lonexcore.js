@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Events } = require('discord.js');
+const { Client, GatewayIntentBits, Events, ChannelType, PermissionFlagsBits } = require('discord.js');
 const { getDriveFiles, sendEmail, findFileByName, getDownloadLink } = require('./google/client');
 
 const client = new Client({
@@ -12,12 +12,13 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, (c) => {
-  console.log(`✅ LonexCore prihlaséný ako: ${c.user.tag}`);
+  console.log(`✅ LonexCore prihlasený ako: ${c.user.tag}`);
 });
 
 // Upload cez message attachment
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
+  
   if (message.content === '!upload' && message.attachments.size > 0) {
     const attachment = message.attachments.first();
     const { uploadFileFromUrl } = require('./google/client');
@@ -33,7 +34,7 @@ client.on(Events.MessageCreate, async (message) => {
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
-
+  
   if (interaction.commandName === 'ping') {
     await interaction.reply('🏓 Pong! LonexCore beží.');
   }
@@ -42,6 +43,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await interaction.reply(
       '📋 **LonexCore príkazy:**\n' +
       '`/ping` — test bota\n' +
+      '`/setup` — vytvor celú štruktúru servera (kategórie, kanály, role)\n' +
       '`/gdrive akcia:list` — zoznam súborov\n' +
       '`/gdrive akcia:upload` — pošli súbor ako `!upload`\n' +
       '`/gdrive akcia:download nazov:xxx` — stiahni súbor\n' +
@@ -52,10 +54,126 @@ client.on(Events.InteractionCreate, async (interaction) => {
     );
   }
 
+  // /SETUP príkaz - vytvorí celú štruktúru servera
+  if (interaction.commandName === 'setup') {
+    if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+      return interaction.reply({ content: '❌ Musíš byť admin na použitie /setup!', ephemeral: true });
+    }
+
+    await interaction.deferReply();
+
+    const guild = interaction.guild;
+    const setupLog = [];
+
+    try {
+      // Vytvor ROLE
+      setupLog.push('🔧 Vytváram role...');
+      const ownerRole = await guild.roles.create({ name: 'Owner', color: 0xFF0000, hoist: true });
+      const ceoRole = await guild.roles.create({ name: 'CEO', color: 0xFFA500, hoist: true });
+      const salesRole = await guild.roles.create({ name: 'Sales', color: 0x00FF00, hoist: true });
+      const devRole = await guild.roles.create({ name: 'Developer', color: 0x0000FF, hoist: true });
+      const editorRole = await guild.roles.create({ name: 'Editor', color: 0xFF00FF, hoist: true });
+      const helpdeskRole = await guild.roles.create({ name: 'Helpdesk', color: 0x00FFFF, hoist: true });
+      setupLog.push('✅ Role vytvorené!');
+
+      // OWNER & CEO kategória
+      setupLog.push('🔧 Vytváram OWNER & CEO kategóriu...');
+      const ceoCategory = await guild.channels.create({
+        name: '🏛️ OWNER & CEO',
+        type: ChannelType.GuildCategory,
+        permissionOverwrites: [
+          { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+          { id: ownerRole.id, allow: [PermissionFlagsBits.ViewChannel] },
+          { id: ceoRole.id, allow: [PermissionFlagsBits.ViewChannel] }
+        ]
+      });
+      await guild.channels.create({ name: 'announcements', type: ChannelType.GuildText, parent: ceoCategory.id });
+      await guild.channels.create({ name: 'strategy', type: ChannelType.GuildText, parent: ceoCategory.id });
+      await guild.channels.create({ name: 'ceo-docs', type: ChannelType.GuildText, parent: ceoCategory.id });
+      await guild.channels.create({ name: 'bot-notifications', type: ChannelType.GuildText, parent: ceoCategory.id });
+
+      // SALES kategória
+      setupLog.push('🔧 Vytváram SALES kategóriu...');
+      const salesCategory = await guild.channels.create({
+        name: '💼 SALES',
+        type: ChannelType.GuildCategory,
+        permissionOverwrites: [
+          { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+          { id: salesRole.id, allow: [PermissionFlagsBits.ViewChannel] }
+        ]
+      });
+      await guild.channels.create({ name: 'general-discussion-sales', type: ChannelType.GuildText, parent: salesCategory.id });
+      await guild.channels.create({ name: 'leads', type: ChannelType.GuildText, parent: salesCategory.id });
+      await guild.channels.create({ name: 'sales-docs', type: ChannelType.GuildText, parent: salesCategory.id });
+      await guild.channels.create({ name: 'bot-notifications-sales', type: ChannelType.GuildText, parent: salesCategory.id });
+
+      // DEVELOPMENT kategória
+      setupLog.push('🔧 Vytváram DEVELOPMENT kategóriu...');
+      const devCategory = await guild.channels.create({
+        name: '💻 DEVELOPMENT',
+        type: ChannelType.GuildCategory,
+        permissionOverwrites: [
+          { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+          { id: devRole.id, allow: [PermissionFlagsBits.ViewChannel] }
+        ]
+      });
+      await guild.channels.create({ name: 'general-discussion-dev', type: ChannelType.GuildText, parent: devCategory.id });
+      await guild.channels.create({ name: 'git-updates', type: ChannelType.GuildText, parent: devCategory.id });
+      await guild.channels.create({ name: 'dev-docs', type: ChannelType.GuildText, parent: devCategory.id });
+      await guild.channels.create({ name: 'bot-notifications-dev', type: ChannelType.GuildText, parent: devCategory.id });
+
+      // EDITOR/GRAPHICS kategória
+      setupLog.push('🔧 Vytváram EDITOR/GRAPHICS kategóriu...');
+      const designCategory = await guild.channels.create({
+        name: '🎨 EDITOR / GRAPHICS',
+        type: ChannelType.GuildCategory,
+        permissionOverwrites: [
+          { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+          { id: editorRole.id, allow: [PermissionFlagsBits.ViewChannel] }
+        ]
+      });
+      await guild.channels.create({ name: 'general-discussion-design', type: ChannelType.GuildText, parent: designCategory.id });
+      await guild.channels.create({ name: 'assets', type: ChannelType.GuildText, parent: designCategory.id });
+      await guild.channels.create({ name: 'design-docs', type: ChannelType.GuildText, parent: designCategory.id });
+      await guild.channels.create({ name: 'bot-notifications-design', type: ChannelType.GuildText, parent: designCategory.id });
+
+      // HELPDESK kategória
+      setupLog.push('🔧 Vytváram HELPDESK kategóriu...');
+      const helpdeskCategory = await guild.channels.create({
+        name: '🎧 HELPDESK',
+        type: ChannelType.GuildCategory,
+        permissionOverwrites: [
+          { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+          { id: helpdeskRole.id, allow: [PermissionFlagsBits.ViewChannel] }
+        ]
+      });
+      await guild.channels.create({ name: 'general-discussion-help', type: ChannelType.GuildText, parent: helpdeskCategory.id });
+      await guild.channels.create({ name: 'tickets', type: ChannelType.GuildText, parent: helpdeskCategory.id });
+      await guild.channels.create({ name: 'helpdesk-docs', type: ChannelType.GuildText, parent: helpdeskCategory.id });
+      await guild.channels.create({ name: 'bot-notifications-help', type: ChannelType.GuildText, parent: helpdeskCategory.id });
+
+      // VOICE kanály
+      setupLog.push('🔧 Vytváram voice kanály...');
+      const voiceCategory = await guild.channels.create({ name: '🔊 VOICE', type: ChannelType.GuildCategory });
+      await guild.channels.create({ name: 'CEO Meeting', type: ChannelType.GuildVoice, parent: voiceCategory.id });
+      await guild.channels.create({ name: 'Sales Room', type: ChannelType.GuildVoice, parent: voiceCategory.id });
+      await guild.channels.create({ name: 'Dev Room', type: ChannelType.GuildVoice, parent: voiceCategory.id });
+      await guild.channels.create({ name: 'Design Room', type: ChannelType.GuildVoice, parent: voiceCategory.id });
+      await guild.channels.create({ name: 'All Hands', type: ChannelType.GuildVoice, parent: voiceCategory.id });
+      await guild.channels.create({ name: 'AFK', type: ChannelType.GuildVoice, parent: voiceCategory.id });
+
+      setupLog.push('✅ Setup dokončený!');
+      await interaction.editReply(setupLog.join('\n'));
+    } catch (err) {
+      await interaction.editReply('❌ Chyba pri setup: ' + err.message);
+    }
+  }
+
+  // Pôvodné príkazy /gdrive a /mail
   if (interaction.commandName === 'gdrive') {
     const akcia = interaction.options.getString('akcia');
     await interaction.deferReply();
-
+    
     if (akcia === 'list') {
       try {
         const files = await getDriveFiles();
@@ -66,17 +184,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
         await interaction.editReply('❌ Chyba: ' + err.message);
       }
     }
-
+    
     if (akcia === 'upload') {
       await interaction.editReply('📎 Pošli súbor ako správu s textom `!upload` — bot ho automaticky nahrá na Drive.');
     }
-
+    
     if (akcia === 'download') {
       const nazov = interaction.options.getString('nazov');
       if (!nazov) return interaction.editReply('❌ Zadaj parameter `nazov`.');
       try {
         const fileId = await findFileByName(nazov);
-        if (!fileId) return interaction.editReply(`❌ Súbor "${nazov}" nebol nájdený.`);
+        if (!fileId) return interaction.editReply(`❌ Súbor \"${nazov}\" nebol nájdený.`);
         const link = await getDownloadLink(fileId);
         await interaction.editReply(`⬇️ **${nazov}**\n🔗 ${link}`);
       } catch (err) {
@@ -90,6 +208,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const predmet = interaction.options.getString('predmet');
     const sprava = interaction.options.getString('sprava');
     const od = interaction.options.getString('od') || process.env.MAIL_FROM;
+    
     await interaction.deferReply();
     try {
       await sendEmail(od, komu, predmet, sprava);
