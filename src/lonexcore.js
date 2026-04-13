@@ -1,4 +1,6 @@
 require('dotenv').config();
+const path = require('path');
+const fs = require('fs').promises;
 const { Client, GatewayIntentBits, Events, ChannelType, PermissionFlagsBits } = require('discord.js');
 const { getDriveFiles, findFileByName, getDownloadLink, listFolder, searchFiles, uploadFileFromUrl } = require('./google/client');
 const { sendMail } = require('./email/smtp');
@@ -61,8 +63,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
       '`/gdrive search nazov:xxx` — hľadaj súbory\n' +
       '`/mail komu: predmet: sprava: [owner:true/false]` — pošli email\n\n' +
       '📋 **LonexAI príkazy:**\n' +
-      '`/ai prompt:xxx` — opýtaj sa (Gemini)\n' +
-      '`/ai prompt:xxx model:openai` — použij GPT-4o'
+            '`/ai prompt:xxx` — opýtaj sa (Claude Haiku)\n' +
+            '`/ai prompt:xxx model:claude-opus` — použij Claude Opus'
     );
   }
 
