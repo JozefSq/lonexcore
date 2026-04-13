@@ -76,12 +76,12 @@ const lonexaiCommands = [
       { name: 'prompt', description: 'Tvoja otázka', type: 3, required: true },
       {
         name: 'model',
-        description: 'Vyber AI model (default: gemini)',
+                description: 'Vyber AI model (default: claude-haiku)',
         type: 3,
         required: false,
         choices: [
-          { name: '🟢 Gemini (Google)', value: 'gemini' },
-          { name: '🟡 GPT-4o (OpenAI)', value: 'openai' }
+                    { name: '🔵 Claude Haiku (rychly)', value: 'claude-haiku' },
+                    { name: '🟣 Claude Opus (najlepsi)', value: 'claude-opus' }
         ]
       }
     ]
