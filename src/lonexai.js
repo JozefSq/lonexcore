@@ -14,21 +14,26 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
 });
 
-// Firemny systemovy prompt - obmedzenie na firemne temy
-const SYSTEM_PROMPT = `Si firemny AI asistent spolocnosti Lonex / LonexDigital. 
-Tvoja uloha je pomocat zamestnancom VYLUCNE s firemnou tematikou:
-- projektovy manazment, ulohy, deadliny
-- vyvoj softveru, kod, debugging
-- firemne procesy, dokumentacia
-- sales, klienti, leads
-- marketing, grafika, obsah
-- administrativne otazky
-- pouzivanie firemnych nastrojov (Discord, Google Drive, email)
-
-Ak sa uzivatel pyta na nieco, co NESUVISI s firmou alebo prácou (napr. recepty, osobne veci, zábava, politika, sport, atd.), ODMIETNI odpovedät a vysvetli ze si firemny asistent. Odpoved vzdycky v jazyku, v ktorom sa uzivatel pyta.`;
+// Firemny system prompt - len firemne temy
+const SYSTEM_PROMPT = [
+  'Si firemny AI asistent spolocnosti Lonex / LonexDigital.',
+  'Tvoja uloha je pomocat zamestnancom VYLUCNE s firemnou tematikou:',
+  '- projektovy manazment, ulohy, deadliny',
+  '- vyvoj softveru, kod, debugging',
+  '- firemne procesy, dokumentacia',
+  '- sales, klienti, leads',
+  '- marketing, grafika, obsah',
+  '- administrativne otazky',
+  '- pouzivanie firemnych nastrojov (Discord, Google Drive, email)',
+  '',
+  'Ak sa uzivatel pyta na nieco, co NESUVISI s firmou alebo pracou',
+  '(napr. recepty, osobne veci, zabava, politika, sport, atd.),',
+  'ODMIETNI odpovedat a vysvetli ze si firemny asistent.',
+  'Odpoved vzdycky v jazyku, v ktorom sa uzivatel pyta.'
+].join('\n');
 
 client.once(Events.ClientReady, (c) => {
-  console.log(`✅ LonexAI prihlaseny ako: ${c.user.tag}`);
+  console.log('\u2705 LonexAI prihlaseny ako: ' + c.user.tag);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
@@ -53,12 +58,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
       let odpoved = message.content[0].text;
       if (odpoved.length > 1900) odpoved = odpoved.substring(0, 1900) + '...\n_(odpoved skratena)_';
 
-      const modelLabel = model === 'claude-opus' ? '🟣 Claude Opus' : '🟦 Claude Haiku';
-      await interaction.editReply(`**Model:** ${modelLabel}\n\n${odpoved}`);
+      const modelLabel = model === 'claude-opus' ? '\ud83d\udfe3 Claude Opus' : '\ud83d\udfe6 Claude Haiku';
+      await interaction.editReply('**Model:** ' + modelLabel + '\n\n' + odpoved);
     } catch (err) {
-      await interaction.editReply('❌ Chyba AI: ' + err.message);
+      console.error('\u274c LonexAI chyba:', err);
+      await interaction.editReply('\u274c Chyba AI: ' + err.message);
     }
   }
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('\u274c Unhandled rejection v LonexAI:', err);
 });
 
 client.login(process.env.LONEXAI_TOKEN);
