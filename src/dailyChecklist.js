@@ -3,135 +3,114 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 const fs = require('fs').promises;
 const path = require('path');
 
+// Singleton guard - zabrani viacnasobnemu spusteniu cronu
+let schedulerStarted = false;
+
 /**
- * Denný checklist - interaktívny formulár o 21:00 pre CEO/Owner tracking
- * @param {Client} client - Discord bot client  
+ * Denny checklist - interaktivny formular o 21:00 pre CEO/Owner tracking
+ * @param {Client} client - Discord bot client
  */
 function startDailyChecklist(client) {
-  // Cron pattern: '0 21 * * *' = každý deň o 21:00 CEST
+  if (schedulerStarted) {
+    console.log('⚠️ Denny checklist scheduler uz bezi, preskakujem...');
+    return;
+  }
+  schedulerStarted = true;
+
+  // Cron pattern: '0 21 * * *' = kazdy den o 21:00 CEST
   cron.schedule('0 21 * * *', async () => {
     try {
-      console.log('⏰ Spúšťam denný checklist o 21:00...');
+      console.log('⏰ Spustam denny checklist o 21:00...');
 
       const guilds = client.guilds.cache;
 
       for (const [guildId, guild] of guilds) {
-        console.log(`📋 Hľadám #announcements kanál na: ${guild.name}`);
+        console.log(`📋 Hladam #announcements kanal na: ${guild.name}`);
 
-        // Nájdi OWNER & CEO kategóriu
+        // Najdi OWNER & CEO kategoriu
         const ownerCategory = guild.channels.cache.find(
           ch => ch.type === 4 && ch.name.toLowerCase().includes('owner')
         );
 
         if (!ownerCategory) {
-          console.log(`⚠️  Kategória OWNER & CEO neexistuje na ${guild.name}`);
+          console.log(`⚠️ Kategoria OWNER & CEO neexistuje na ${guild.name}`);
           continue;
         }
 
-        // Nájdi #announcements kanál
+        // Najdi #announcements kanal
         const announcementsChannel = guild.channels.cache.find(
-          ch => ch.parentId === ownerCategory.id && 
-                ch.name === 'announcements' && 
+          ch => ch.parentId === ownerCategory.id &&
+                ch.name === 'announcements' &&
                 ch.type === 0
         );
 
         if (!announcementsChannel) {
-          console.log(`⚠️  #announcements neexistuje v OWNER & CEO na ${guild.name}`);
+          console.log(`⚠️ #announcements neexistuje v OWNER & CEO na ${guild.name}`);
           continue;
         }
 
-        // Vytvor embed s informáciami o checkliste
+        // Vytvor embed s informaciami o checkliste
         const embed = new EmbedBuilder()
           .setColor(0xFF6B35)
-          .setTitle('📋 DENNÝ CHECKLIST - Čas na reflexívu!')
-          .setDescription('🔥 **30 minút na rast a sústredenosts**\n\nOdpovede sa uložia a použijú na týždenné reporty + AI analýzu tvojho rastu.')
+          .setTitle('📋 DENNY CHECKLIST - Cas na reflexivu!')
+          .setDescription('🔥 **30 minut na rast a sustredenost**\n\nOdpovede sa ulozi a pouziju na tyzdenné reporty + AI analyzu tvojho rastu.')
           .addFields(
-            { 
-              name: '🎯 1. VÝSLEDKY DŇA (5 min)', 
-              value: 'Koľko ľudí som oslovil? Aký content? Splnil som priority?',
-              inline: false 
-            },
-            { 
-              name: '⚡ 2. ENERGIA & TELO (3 min)', 
-              value: 'Čo som zjedol (HBACL)? Pohyb? Kvalita spánku?',
-              inline: false 
-            },
-            { 
-              name: '🧠 3. MENTÁLNY STAV (5 min)', 
-              value: 'Kde som bol hlavou? Rozptýlený, fokusovaný, motivovaný?',
-              inline: false 
-            },
-            { 
-              name: '💡 4. MOMENT RASTU (5 min)', 
-              value: 'Čo som sa naučil - o LR, o ľuďoch, o sebe?',
-              inline: false 
-            },
-            { 
-              name: '✅ 5. ČO FUNGUJE / NEFUNGUJE (5 min)', 
-              value: 'V recruitingu, content tvorbe, komunikácii?',
-              inline: false 
-            },
-            { 
-              name: '🎓 6. ZAJTRAJŠÍ ZÁMER (7 min)', 
-              value: '3 priority: LR, PM/práca, osobný rast',
-              inline: false 
-            }
+            { name: '🎯 1. VYSLEDKY DNA (5 min)', value: 'Kolko ludi som oslovil? Aky content? Splnil som priority?', inline: false },
+            { name: '⚡ 2. ENERGIA & TELO (3 min)', value: 'Co som zjedol (HBACL)? Pohyb? Kvalita spanku?', inline: false },
+            { name: '🧠 3. MENTALNY STAV (5 min)', value: 'Kde som bol hlavou? Rozptylenvy, fokusovany, motivovany?', inline: false },
+            { name: '💡 4. MOMENT RASTU (5 min)', value: 'Co som sa naucil - o LR, o ludoch, o sebe?', inline: false },
+            { name: '✅ 5. CO FUNGUJE / NEFUNGUJE (5 min)', value: 'V recruitingu, content tvorbe, komunikacii?', inline: false },
+            { name: '🎓 6. ZAJTRAJSI ZAMER (7 min)', value: '3 priority: LR, PM/praca, osobny rast', inline: false }
           )
           .setTimestamp()
-          .setFooter({ text: 'LonexCore Bot • Denný Growth Tracker' });
+          .setFooter({ text: 'LonexCore Bot • Denny Growth Tracker' });
 
-        // Vytvor tlačidlo na vyplnenie checklistu
+        // Vytvor tlacidlo na vyplnenie checklistu
         const button = new ButtonBuilder()
           .setCustomId('daily_checklist_fill')
-          .setLabel('📝 Vyplniť Checklist')
+          .setLabel('📝 Vyplnit Checklist')
           .setStyle(ButtonStyle.Primary);
 
         const row = new ActionRowBuilder().addComponents(button);
 
-        // Pošli správu s tlačidlom
-        await announcementsChannel.send({ 
-          embeds: [embed],
-          components: [row]
-        });
-        
-        console.log(`✅ Denný checklist odoslaný do #announcements na ${guild.name}`);
+        // Posli spravu s tlacidlom
+        await announcementsChannel.send({ embeds: [embed], components: [row] });
+        console.log(`✅ Denny checklist odoslany do #announcements na ${guild.name}`);
       }
     } catch (error) {
-      console.error('❌ Chyba pri posielaní checklistu:', error);
+      console.error('❌ Chyba pri posielani checklistu:', error);
     }
   }, {
     scheduled: true,
-    timezone: "Europe/Bratislava"
+    timezone: 'Europe/Bratislava'
   });
 
-  console.log('🚀 Denný checklist scheduler aktívny (každý deň o 21:00 CEST)');
+  console.log('🚀 Denny checklist scheduler aktivny (kazdy den o 21:00 CEST)');
 }
 
 /**
- * Ulož odpoveď z checklistu do JSON súboru
+ * Uloz odpoved z checklistu do JSON suboru
+ * Poznamka: subor je checklistResponses.json (zhodny s weeklyReports.js)
  */
 async function saveChecklistResponse(userId, username, responses) {
   try {
     const dataDir = path.join(__dirname, '../data');
-    const filePath = path.join(dataDir, 'checklist-responses.json');
+    // OPRAVA: nazov suboru zhodny s weeklyReports.js
+    const filePath = path.join(dataDir, 'checklistResponses.json');
 
-    // Vytvor data/ priečinok ak neexistuje
-    try {
-      await fs.access(dataDir);
-    } catch {
-      await fs.mkdir(dataDir, { recursive: true });
-    }
+    // Vytvor data/ priecinok ak neexistuje
+    await fs.mkdir(dataDir, { recursive: true });
 
-    // Načítaj existujúce dáta
+    // Nacitaj existujuce data
     let data = [];
     try {
       const fileContent = await fs.readFile(filePath, 'utf8');
       data = JSON.parse(fileContent);
     } catch {
-      // Súbor ešte neexistuje
+      // Subor este neexistuje
     }
 
-    // Pridaj novú odpoveď
+    // Pridaj novu odpoved
     data.push({
       userId,
       username,
@@ -139,11 +118,11 @@ async function saveChecklistResponse(userId, username, responses) {
       responses
     });
 
-    // Ulož späť
+    // Uloz spat
     await fs.writeFile(filePath, JSON.stringify(data, null, 2));
-    console.log(`✅ Checklist odpoveď uložená pre ${username}`);
+    console.log(`✅ Checklist odpoved ulozena pre ${username}`);
   } catch (error) {
-    console.error('❌ Chyba pri ukladaní checklistu:', error);
+    console.error('❌ Chyba pri ukladani checklistu:', error);
   }
 }
 
