@@ -19,16 +19,16 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, (c) => {
-  console.log(`✅ LonexCore prihlaseny ako: ${c.user.tag}`);
+  console.log(`✅ LonexCore prihlásený ako: ${c.user.tag}`);
 
-  // Spusti denny checklist scheduler
+  // Spusti denný checklist scheduler
   startDailyChecklist(client);
-    startWeeklyReports(client);
-      startWeeklyCalendarReminder(client);
+  startWeeklyReports(client);
+  startWeeklyCalendarReminder(client);
 
   // Initialize ProjectManager
-const projectManager = new ProjectManager();
-projectManager.init();
+  const projectManager = new ProjectManager();
+  projectManager.init();
 });
 
 // Upload cez message attachment
@@ -37,10 +37,10 @@ client.on(Events.MessageCreate, async (message) => {
 
   if (message.content === '!upload' && message.attachments.size > 0) {
     const attachment = message.attachments.first();
-    await message.reply('⏳ Nahravem na Google Drive...');
+    await message.reply('⏳ Nahrávam na Google Drive...');
     try {
       const file = await uploadFileFromUrl(attachment.url, attachment.name);
-      await message.reply(`✅ Subor **${file.name}** nahrany!\n🔗 ${file.webViewLink}`);
+      await message.reply(`✅ Súbor **${file.name}** nahraný!\n🔗 ${file.webViewLink}`);
     } catch (err) {
       await message.reply('❌ Chyba uploadu: ' + err.message);
     }
@@ -51,27 +51,27 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'ping') {
-    await interaction.reply('🏓 Pong! LonexCore bezi.');
+    await interaction.reply('🏓 Pong! LonexCore beží.');
   }
 
   if (interaction.commandName === 'help') {
     await interaction.reply(
-      '📋 **LonexCore prikazy:**\n' +
+      '📋 **LonexCore príkazy:**\n' +
       '`/ping` — test bota\n' +
-      '`/setup` — vytvor celu strukturu servera (kategorie, kanaly, role)\n' +
-      '`/gdrive browse [folder_id]` — prehliadaj priecinky\n' +
-      '`/gdrive search nazov:xxx` — hladaj subory\n' +
-      '`/mail komu: predmet: sprava: [owner:true/false]` — posli email\n\n' +
-      '📋 **LonexAI prikazy:**\n' +
-      '`/ai prompt:xxx` — opytaj sa (Claude Haiku)\n' +
-      '`/ai prompt:xxx model:claude-opus` — pouzi Claude Opus'
+      '`/setup` — vytvor celú štruktúru servera (kategórie, kanály, role)\n' +
+      '`/gdrive browse [folder_id]` — prehliadaj priečinky\n' +
+      '`/gdrive search nazov:xxx` — hľadaj súbory\n' +
+      '`/mail komu: predmet: sprava: [owner:true/false]` — pošli email\n\n' +
+      '📋 **LonexAI príkazy:**\n' +
+      '`/ai prompt:xxx` — opýtaj sa (Claude Haiku)\n' +
+      '`/ai prompt:xxx model:claude-opus` — použij Claude Opus'
     );
   }
 
-  // /SETUP prikaz - vytvoricelu strukturu servera
+  // /SETUP príkaz - vytvorí celú štruktúru servera
   if (interaction.commandName === 'setup') {
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return interaction.reply({ content: '❌ Muses byt admin na pouzitie /setup!', ephemeral: true });
+      return interaction.reply({ content: '❌ Musíš byť admin na použitie /setup!', ephemeral: true });
     }
 
     await interaction.deferReply();
@@ -79,18 +79,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const setupLog = [];
 
     try {
-      // Vytvor ROLE
-      setupLog.push('🔧 Vytvoram role...');
+      setupLog.push('🔧 Vytvaram role...');
       const ownerRole = await guild.roles.create({ name: 'Owner', color: 0xFF0000, hoist: true });
       const ceoRole = await guild.roles.create({ name: 'CEO', color: 0xFFA500, hoist: true });
       const salesRole = await guild.roles.create({ name: 'Sales', color: 0x00FF00, hoist: true });
       const devRole = await guild.roles.create({ name: 'Developer', color: 0x0000FF, hoist: true });
       const editorRole = await guild.roles.create({ name: 'Editor', color: 0xFF00FF, hoist: true });
       const helpdeskRole = await guild.roles.create({ name: 'Helpdesk', color: 0x00FFFF, hoist: true });
-      setupLog.push('✅ Role vytvorene!');
+      setupLog.push('✅ Role vytvorené!');
 
-      // OWNER & CEO kategoria
-      setupLog.push('🔧 Vytvoram OWNER & CEO kategoriu...');
+      setupLog.push('🔧 Vytvaram OWNER & CEO kategóriu...');
       const ceoCategory = await guild.channels.create({
         name: '🏛️ OWNER & CEO',
         type: ChannelType.GuildCategory,
@@ -105,8 +103,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await guild.channels.create({ name: 'ceo-docs', type: ChannelType.GuildText, parent: ceoCategory.id });
       await guild.channels.create({ name: 'bot-notifications', type: ChannelType.GuildText, parent: ceoCategory.id });
 
-      // SALES kategoria
-      setupLog.push('🔧 Vytvoram SALES kategoriu...');
+      setupLog.push('🔧 Vytvaram SALES kategóriu...');
       const salesCategory = await guild.channels.create({
         name: '💼 SALES',
         type: ChannelType.GuildCategory,
@@ -120,8 +117,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await guild.channels.create({ name: 'sales-docs', type: ChannelType.GuildText, parent: salesCategory.id });
       await guild.channels.create({ name: 'bot-notifications-sales', type: ChannelType.GuildText, parent: salesCategory.id });
 
-      // DEVELOPMENT kategoria
-      setupLog.push('🔧 Vytvoram DEVELOPMENT kategoriu...');
+      setupLog.push('🔧 Vytvaram DEVELOPMENT kategóriu...');
       const devCategory = await guild.channels.create({
         name: '💻 DEVELOPMENT',
         type: ChannelType.GuildCategory,
@@ -135,8 +131,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await guild.channels.create({ name: 'dev-docs', type: ChannelType.GuildText, parent: devCategory.id });
       await guild.channels.create({ name: 'bot-notifications-dev', type: ChannelType.GuildText, parent: devCategory.id });
 
-      // EDITOR/GRAPHICS kategoria
-      setupLog.push('🔧 Vytvoram EDITOR/GRAPHICS kategoriu...');
+      setupLog.push('🔧 Vytvaram EDITOR/GRAPHICS kategóriu...');
       const designCategory = await guild.channels.create({
         name: '🎨 EDITOR / GRAPHICS',
         type: ChannelType.GuildCategory,
@@ -150,8 +145,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await guild.channels.create({ name: 'design-docs', type: ChannelType.GuildText, parent: designCategory.id });
       await guild.channels.create({ name: 'bot-notifications-design', type: ChannelType.GuildText, parent: designCategory.id });
 
-      // HELPDESK kategoria
-      setupLog.push('🔧 Vytvoram HELPDESK kategoriu...');
+      setupLog.push('🔧 Vytvaram HELPDESK kategóriu...');
       const helpdeskCategory = await guild.channels.create({
         name: '🎧 HELPDESK',
         type: ChannelType.GuildCategory,
@@ -165,8 +159,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await guild.channels.create({ name: 'helpdesk-docs', type: ChannelType.GuildText, parent: helpdeskCategory.id });
       await guild.channels.create({ name: 'bot-notifications-help', type: ChannelType.GuildText, parent: helpdeskCategory.id });
 
-      // VOICE kanaly
-      setupLog.push('🔧 Vytvoram voice kanaly...');
+      setupLog.push('🔧 Vytvaram voice kanály...');
       const voiceCategory = await guild.channels.create({ name: '🔊 VOICE', type: ChannelType.GuildCategory });
       await guild.channels.create({ name: 'CEO Meeting', type: ChannelType.GuildVoice, parent: voiceCategory.id });
       await guild.channels.create({ name: 'Sales Room', type: ChannelType.GuildVoice, parent: voiceCategory.id });
@@ -175,14 +168,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await guild.channels.create({ name: 'All Hands', type: ChannelType.GuildVoice, parent: voiceCategory.id });
       await guild.channels.create({ name: 'AFK', type: ChannelType.GuildVoice, parent: voiceCategory.id });
 
-      setupLog.push('✅ Setup dokonceny!');
+      setupLog.push('✅ Setup dokončený!');
       await interaction.editReply(setupLog.join('\n'));
     } catch (err) {
       await interaction.editReply('❌ Chyba pri setup: ' + err.message);
     }
   }
 
-  // /GDRIVE prikaz s subcommandmi: browse a search
+  // /GDRIVE príkaz s subcommandmi: browse a search
   if (interaction.commandName === 'gdrive') {
     const sub = interaction.options.getSubcommand();
     await interaction.deferReply({ ephemeral: true });
@@ -193,8 +186,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
         const items = await listFolder(folderId);
         const folders = items.filter(f => f.mimeType === 'application/vnd.google-apps.folder');
         const files = items.filter(f => f.mimeType !== 'application/vnd.google-apps.folder');
-        let msg = `📁 **Priecinky:**\n${folders.map(f => `\`${f.id}\` — ${f.name}`).join('\n') || 'Ziadne'}\n\n`;
-        msg += `📄 **Subory:**\n${files.map(f => f.name).join('\n') || 'Ziadne'}`;
+        let msg = `📁 **Priečinky:**\n${folders.map(f => `\`${f.id}\` — ${f.name}`).join('\n') || 'Žiadne'}\n\n`;
+        msg += `📄 **Súbory:**\n${files.map(f => f.name).join('\n') || 'Žiadne'}`;
         await interaction.editReply(msg);
       } catch (err) {
         await interaction.editReply('❌ Chyba: ' + err.message);
@@ -206,17 +199,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
       try {
         const results = await searchFiles(query);
         if (results.length === 0) {
-          return interaction.editReply(`🔍 Ziadne vysledky pre "${query}".`);
+          return interaction.editReply(`🔍 Žiadne výsledky pre "${query}".`);
         }
         const list = results.map(f => `[${f.name}](${f.webViewLink})`).join('\n');
-        await interaction.editReply(`🔍 **Vysledky pre "${query}":**\n${list}`);
+        await interaction.editReply(`🔍 **Výsledky pre "${query}":**\n${list}`);
       } catch (err) {
         await interaction.editReply('❌ Chyba: ' + err.message);
       }
     }
   }
 
-  // /MAIL prikaz cez SMTP
+  // /MAIL príkaz cez SMTP
   if (interaction.commandName === 'mail') {
     const komu = interaction.options.getString('komu');
     const predmet = interaction.options.getString('predmet');
@@ -226,7 +219,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     try {
       await sendMail({ to: komu, subject: predmet, text: sprava, useOwner });
       const from = useOwner ? process.env.SMTP_USER_OWNER : process.env.SMTP_USER_INFO;
-      await interaction.editReply(`✅ Email odoslany!\n**Od:** ${from}\n**Komu:** ${komu}\n**Predmet:** ${predmet}`);
+      await interaction.editReply(`✅ Email odoslaný!\n**Od:** ${from}\n**Komu:** ${komu}\n**Predmet:** ${predmet}`);
     } catch (err) {
       await interaction.editReply('❌ Chyba: ' + err.message);
     }
@@ -245,7 +238,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   const dataDir = path.join(__dirname, '../data');
   const responsesFile = path.join(dataDir, 'checklistResponses.json');
 
-  // Okamzite potvrdi interakciu Discordu (do 3s) - predchadza "This interaction failed"
+  // Okamzite potvrdi interakciu (do 3s) - predchadza 'This interaction failed'
   await interaction.deferReply({ ephemeral: true });
 
   try {
@@ -259,17 +252,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       // Subor este neexistuje
     }
 
-    // Ochrana proti duplicite - rovnaky user + sekcia + sprava
-    const alreadyDone = responses.some(
-      r => r.userId === userId && r.section === section && r.messageId === interaction.message.id
-    );
-
-    if (alreadyDone) {
-      return await interaction.editReply({
-        content: `⚠️ Sekciu **${section}** si uz oznacilas ako dokoncenu.`
-      });
-    }
-
     responses.push({
       userId,
       username: interaction.user.tag,
@@ -281,14 +263,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await fs.writeFile(responsesFile, JSON.stringify(responses, null, 2));
 
     await interaction.editReply({
-      content: `✅ Sekcia **${section}** oznacena ako dokoncena!`
+      content: `✅ Sekcia **${section}** označená ako dokončená!`
     });
 
-    console.log(`✅ ${interaction.user.tag} dokoncil sekciu: ${section}`);
+    console.log(`✅ ${interaction.user.tag} dokončil sekciu: ${section}`);
   } catch (err) {
-    console.error('❌ Chyba pri ukladani odpovede:', err);
+    console.error('❌ Chyba pri ukladaní odpovede:', err);
     await interaction.editReply({
-      content: '❌ Chyba pri ukladani odpovede'
+      content: '❌ Chyba pri ukladaní odpovede'
     });
   }
 });
